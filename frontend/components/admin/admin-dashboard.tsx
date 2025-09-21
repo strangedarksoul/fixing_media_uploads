@@ -187,7 +187,6 @@ export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
-  const [isGigDialogOpen, setIsGigDialogOpen] = useState(false);
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [showGigDialog, setShowGigDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -248,7 +247,6 @@ export function AdminDashboard() {
         adminAPI.getLeads(),
         projectsAPI.getProjects(),
         gigsAPI.getGigs(),
-        adminAPI.getAdminGigs(),
         projectsAPI.getSkills(),
       ]);
 
@@ -429,25 +427,6 @@ export function AdminDashboard() {
           Portfolio analytics, content management, and system administration
         </p>
       </motion.div>
-
-      {/* Global Message Display */}
-      {message && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="fixed top-20 right-4 z-50"
-        >
-          <Alert className={`${message.type === 'error' ? 'border-red-500/50 bg-red-500/10' : 'border-green-500/50 bg-green-500/10'} shadow-lg`}>
-            <AlertDescription className={message.type === 'error' ? 'text-red-200' : 'text-green-200'}>
-              {message.text}
-            </AlertDescription>
-          </Alert>
-        </motion.div>
-      )}
-
-      {/* Auto-clear message after 5 seconds */}
-      {message && setTimeout(() => setMessage(null), 5000)}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-6">

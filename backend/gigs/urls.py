@@ -16,8 +16,6 @@ urlpatterns = [
     
     # Admin endpoints
     path('admin/gigs', views.AdminGigListView.as_view(), name='admin_gig_list'),
-    path('admin/gigs/create', views.AdminGigCreateView.as_view(), name='admin_gig_create'),
-    path('admin/gigs/<int:pk>', views.AdminGigDetailView.as_view(), name='admin_gig_detail'),
     path('admin/leads', views.AdminLeadListView.as_view(), name='admin_lead_list'),
     path('admin/leads/<int:pk>', views.AdminLeadDetailView.as_view(), name='admin_lead_detail'),
 ]
