@@ -378,26 +378,6 @@ export function AdminDashboard() {
     setShowGigDialog(true);
   };
 
-  const handleDeleteProject = async (project: Project) => {
-    if (!confirm(`Are you sure you want to delete "${project.title}"? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      await adminAPI.deleteProject(project.id);
-      setMessage({ type: 'success', text: 'Project deleted successfully!' });
-      loadAdminData(); // Reload data
-      
-      analytics.track('admin_project_deleted', {
-        project_id: project.id,
-        title: project.title,
-      });
-    } catch (error) {
-      console.error('Failed to delete project:', error);
-      setMessage({ type: 'error', text: 'Failed to delete project' });
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'new': return 'bg-blue-500/20 text-blue-400';
@@ -408,6 +388,25 @@ export function AdminDashboard() {
       default: return 'bg-gray-500/20 text-gray-400';
     }
   };
+
+            {/* Global Message Display */}
+            {message && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="fixed top-20 right-4 z-50"
+              >
+                <Alert className={`${message.type === 'error' ? 'border-red-500/50 bg-red-500/10' : 'border-green-500/50 bg-green-500/10'} shadow-lg`}>
+                  <AlertDescription className={message.type === 'error' ? 'text-red-200' : 'text-green-200'}>
+                    {message.text}
+                  </AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
+
+            {/* Auto-clear message after 5 seconds */}
+            {message && setTimeout(() => setMessage(null), 5000)}
 
   if (!user || (user.role !== 'admin' && !user.is_staff)) {
     return (
