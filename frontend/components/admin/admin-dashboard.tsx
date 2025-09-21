@@ -177,17 +177,610 @@ interface Skill {
   color: string;
 }
 
+interface GigFormProps {
+  gig?: Gig | null;
+  projects: Project[];
+  categories: any[];
+  onSubmit: (data: any) => void;
+  onCancel: () => void;
+}
+
+function GigForm({ gig, projects, categories, onSubmit, onCancel }: GigFormProps) {
+  const [formData, setFormData] = useState({
+    title: gig?.title || '',
+    category: gig?.category?.id || '',
+    short_description: gig?.short_description || '',
+    long_description: gig?.long_description || '',
+    price_min: gig?.price_min || '',
+    price_max: gig?.price_max || '',
+    price_currency: gig?.price_currency || 'USD',
+    price_type: gig?.price_type || 'fixed',
+    delivery_time_min: gig?.delivery_time_min || '',
+    delivery_time_max: gig?.delivery_time_max || '',
+    delivery_time_unit: gig?.delivery_time_unit || 'days',
+    inclusions: gig?.inclusions?.join('\n') || '',
+    exclusions: gig?.exclusions?.join('\n') || '',
+    requirements: gig?.requirements?.join('\n') || '',
+    addons: gig?.addons || [],
+    sample_projects: gig?.sample_projects?.map((p: any) => p.id) || [],
+    hero_image: gig?.hero_image || '',
+    gallery_images: gig?.gallery_images || [],
+    external_links: gig?.external_links || {},
+    status: gig?.status || 'open',
+    is_featured: gig?.is_featured || false,
+    order: gig?.order || 0,
+  });
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [newAddon, setNewAddon] = useState({ name: '', price: '', description: '' });
+  const [newExternalLink, setNewExternalLink] = useState({ platform: '', url: '' });
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+    if (!formData.category) newErrors.category = 'Category is required';
+    if (!formData.short_description.trim()) newErrors.short_description = 'Short description is required';
+    if (!formData.long_description.trim()) newErrors.long_description = 'Long description is required';
+    if (!formData.price_min || parseFloat(formData.price_min) <= 0) newErrors.price_min = 'Valid minimum price is required';
+    if (!formData.delivery_time_min || parseInt(formData.delivery_time_min) <= 0) newErrors.delivery_time_min = 'Valid delivery time is required';
+    if (!formData.inclusions.trim()) newErrors.inclusions = 'At least one inclusion is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onSubmit(formData);
+    }
+  };
+
+  const addAddon = () => {
+    if (newAddon.name && newAddon.price && newAddon.description) {
+      setFormData(prev => ({
+        ...prev,
+        addons: [...prev.addons, { ...newAddon, price: parseFloat(newAddon.price) }]
+      }));
+      setNewAddon({ name: '', price: '', description: '' });
+    }
+  };
+
+  const removeAddon = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      addons: prev.addons.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addExternalLink = () => {
+    if (newExternalLink.platform && newExternalLink.url) {
+      setFormData(prev => ({
+        ...prev,
+        external_links: {
+          ...prev.external_links,
+          [newExternalLink.platform]: newExternalLink.url
+        }
+      }));
+      setNewExternalLink({ platform: '', url: '' });
+    }
+  };
+
+  const removeExternalLink = (platform: string) => {
+    setFormData(prev => {
+      const newLinks = { ...prev.external_links };
+      delete newLinks[platform];
+      return { ...prev, external_links: newLinks };
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Tabs defaultValue="basic" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="basic">Basic Info</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing & Delivery</TabsTrigger>
+          <TabsTrigger value="details">Service Details</TabsTrigger>
+          <TabsTrigger value="media">Media & Links</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="basic" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Service Title *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="e.g., Full-Stack Web Application"
+              />
+              {errors.title && <p className="text-red-500 text-sm">{errors.title}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Category *</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category && <p className="text-red-500 text-sm">{errors.category}</p>}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="short_description">Short Description *</Label>
+            <Textarea
+              id="short_description"
+              value={formData.short_description}
+              onChange={(e) => setFormData(prev => ({ ...prev, short_description: e.target.value }))}
+              placeholder="Brief description for service cards (max 300 characters)"
+              rows={3}
+              maxLength={300}
+            />
+            <div className="text-xs text-muted-foreground text-right">
+              {formData.short_description.length}/300
+            </div>
+            {errors.short_description && <p className="text-red-500 text-sm">{errors.short_description}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="long_description">Detailed Description *</Label>
+            <Textarea
+              id="long_description"
+              value={formData.long_description}
+              onChange={(e) => setFormData(prev => ({ ...prev, long_description: e.target.value }))}
+              placeholder="Detailed service description with features and benefits"
+              rows={6}
+            />
+            {errors.long_description && <p className="text-red-500 text-sm">{errors.long_description}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="limited">Limited Availability</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="paused">Paused</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="is_featured"
+                checked={formData.is_featured}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_featured: !!checked }))}
+              />
+              <Label htmlFor="is_featured">Featured Service</Label>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="order">Display Order</Label>
+              <Input
+                id="order"
+                type="number"
+                value={formData.order}
+                onChange={(e) => setFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="pricing" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Pricing</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price_min">Minimum Price *</Label>
+                    <Input
+                      id="price_min"
+                      type="number"
+                      step="0.01"
+                      value={formData.price_min}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price_min: e.target.value }))}
+                      placeholder="1000"
+                    />
+                    {errors.price_min && <p className="text-red-500 text-sm">{errors.price_min}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="price_max">Maximum Price</Label>
+                    <Input
+                      id="price_max"
+                      type="number"
+                      step="0.01"
+                      value={formData.price_max}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price_max: e.target.value }))}
+                      placeholder="5000 (optional)"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price_currency">Currency</Label>
+                    <Select value={formData.price_currency} onValueChange={(value) => setFormData(prev => ({ ...prev, price_currency: value }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="GBP">GBP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="price_type">Price Type</Label>
+                    <Select value={formData.price_type} onValueChange={(value) => setFormData(prev => ({ ...prev, price_type: value }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">Fixed Price</SelectItem>
+                        <SelectItem value="hourly">Hourly Rate</SelectItem>
+                        <SelectItem value="project">Per Project</SelectItem>
+                        <SelectItem value="retainer">Monthly Retainer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Delivery Time</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="delivery_time_min">Minimum Time *</Label>
+                    <Input
+                      id="delivery_time_min"
+                      type="number"
+                      value={formData.delivery_time_min}
+                      onChange={(e) => setFormData(prev => ({ ...prev, delivery_time_min: e.target.value }))}
+                      placeholder="7"
+                    />
+                    {errors.delivery_time_min && <p className="text-red-500 text-sm">{errors.delivery_time_min}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="delivery_time_max">Maximum Time</Label>
+                    <Input
+                      id="delivery_time_max"
+                      type="number"
+                      value={formData.delivery_time_max}
+                      onChange={(e) => setFormData(prev => ({ ...prev, delivery_time_max: e.target.value }))}
+                      placeholder="14 (optional)"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="delivery_time_unit">Time Unit</Label>
+                  <Select value={formData.delivery_time_unit} onValueChange={(value) => setFormData(prev => ({ ...prev, delivery_time_unit: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="days">Days</SelectItem>
+                      <SelectItem value="weeks">Weeks</SelectItem>
+                      <SelectItem value="months">Months</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="details" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg text-green-400">What's Included</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="inclusions">Inclusions (one per line) *</Label>
+                  <Textarea
+                    id="inclusions"
+                    value={formData.inclusions}
+                    onChange={(e) => setFormData(prev => ({ ...prev, inclusions: e.target.value }))}
+                    placeholder="Custom design&#10;Responsive layout&#10;SEO optimization&#10;Source code delivery"
+                    rows={6}
+                  />
+                  {errors.inclusions && <p className="text-red-500 text-sm">{errors.inclusions}</p>}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg text-red-400">What's Not Included</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="exclusions">Exclusions (one per line)</Label>
+                  <Textarea
+                    id="exclusions"
+                    value={formData.exclusions}
+                    onChange={(e) => setFormData(prev => ({ ...prev, exclusions: e.target.value }))}
+                    placeholder="Content writing&#10;Logo design&#10;Hosting setup&#10;Third-party integrations"
+                    rows={6}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Client Requirements</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="requirements">What clients need to provide (one per line)</Label>
+                <Textarea
+                  id="requirements"
+                  value={formData.requirements}
+                  onChange={(e) => setFormData(prev => ({ ...prev, requirements: e.target.value }))}
+                  placeholder="Project brief and requirements&#10;Brand assets (logo, colors, fonts)&#10;Content and copy&#10;Access to existing systems (if applicable)"
+                  rows={4}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Add-ons</CardTitle>
+              <CardDescription>Optional extras clients can purchase</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {formData.addons.length > 0 && (
+                <div className="space-y-2">
+                  {formData.addons.map((addon: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <div className="font-medium">{addon.name}</div>
+                        <div className="text-sm text-muted-foreground">{addon.description}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-green-400">${addon.price}</span>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removeAddon(index)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg bg-muted/30">
+                <Input
+                  placeholder="Add-on name"
+                  value={newAddon.name}
+                  onChange={(e) => setNewAddon(prev => ({ ...prev, name: e.target.value }))}
+                />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="Price"
+                  value={newAddon.price}
+                  onChange={(e) => setNewAddon(prev => ({ ...prev, price: e.target.value }))}
+                />
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Description"
+                    value={newAddon.description}
+                    onChange={(e) => setNewAddon(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                  <Button type="button" onClick={addAddon} size="sm">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Sample Projects</CardTitle>
+              <CardDescription>Projects that showcase this service</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {projects.map((project) => (
+                    <div key={project.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`project-${project.id}`}
+                        checked={formData.sample_projects.includes(project.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData(prev => ({
+                              ...prev,
+                              sample_projects: [...prev.sample_projects, project.id]
+                            }));
+                          } else {
+                            setFormData(prev => ({
+                              ...prev,
+                              sample_projects: prev.sample_projects.filter(id => id !== project.id)
+                            }));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`project-${project.id}`} className="text-sm">
+                        {project.title}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Selected: {formData.sample_projects.length} project{formData.sample_projects.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="media" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Images</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="hero_image">Hero Image URL</Label>
+                  <Input
+                    id="hero_image"
+                    value={formData.hero_image}
+                    onChange={(e) => setFormData(prev => ({ ...prev, hero_image: e.target.value }))}
+                    placeholder="https://example.com/hero-image.jpg"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Gallery Images</Label>
+                  <div className="space-y-2">
+                    {formData.gallery_images.map((image: string, index: number) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          value={image}
+                          onChange={(e) => {
+                            const newImages = [...formData.gallery_images];
+                            newImages[index] = e.target.value;
+                            setFormData(prev => ({ ...prev, gallery_images: newImages }));
+                          }}
+                          placeholder="https://example.com/gallery-image.jpg"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            const newImages = formData.gallery_images.filter((_, i) => i !== index);
+                            setFormData(prev => ({ ...prev, gallery_images: newImages }));
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFormData(prev => ({ ...prev, gallery_images: [...prev.gallery_images, ''] }))}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Gallery Image
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">External Platform Links</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {Object.entries(formData.external_links).length > 0 && (
+                  <div className="space-y-2">
+                    {Object.entries(formData.external_links).map(([platform, url]) => (
+                      <div key={platform} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <div className="font-medium capitalize">{platform}</div>
+                          <div className="text-sm text-muted-foreground truncate">{url}</div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removeExternalLink(platform)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 p-4 border rounded-lg bg-muted/30">
+                  <Input
+                    placeholder="Platform (e.g., upwork)"
+                    value={newExternalLink.platform}
+                    onChange={(e) => setNewExternalLink(prev => ({ ...prev, platform: e.target.value }))}
+                  />
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="URL"
+                      value={newExternalLink.url}
+                      onChange={(e) => setNewExternalLink(prev => ({ ...prev, url: e.target.value }))}
+                    />
+                    <Button type="button" onClick={addExternalLink} size="sm">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      <div className="flex justify-end gap-4 pt-6 border-t">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" className="bg-gradient-to-r from-purple-500 to-pink-500">
+          {gig ? 'Update Service' : 'Create Service'}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export function AdminDashboard() {
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [gigs, setGigs] = useState<Gig[]>([]);
-  const [gigs, setGigs] = useState<Gig[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
   const [isGigDialogOpen, setIsGigDialogOpen] = useState(false);
   const [showProjectDialog, setShowProjectDialog] = useState(false);
@@ -243,7 +836,6 @@ export function AdminDashboard() {
     },
   });
 
-        gigsResponse,
   const loadAdminData = useCallback(async () => {
     try {
       const [metricsResponse, leadsResponse, projectsResponse, gigsResponse, skillsResponse] = await Promise.all([
@@ -258,7 +850,6 @@ export function AdminDashboard() {
       setMetrics(metricsResponse.data);
       setLeads(leadsResponse.data.leads || []);
       setProjects(projectsResponse.data.results || []);
-      setGigs(gigsResponse.data.results || []);
       setGigs(gigsResponse.data.results || []);
       setSkills(skillsResponse.data.results || []);
     } catch (error) {
@@ -395,25 +986,6 @@ export function AdminDashboard() {
     }
   };
 
-            {/* Global Message Display */}
-            {message && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="fixed top-20 right-4 z-50"
-              >
-                <Alert className={`${message.type === 'error' ? 'border-red-500/50 bg-red-500/10' : 'border-green-500/50 bg-green-500/10'} shadow-lg`}>
-                  <AlertDescription className={message.type === 'error' ? 'text-red-200' : 'text-green-200'}>
-                    {message.text}
-                  </AlertDescription>
-                </Alert>
-              </motion.div>
-            )}
-
-            {/* Auto-clear message after 5 seconds */}
-            {message && setTimeout(() => setMessage(null), 5000)}
-
   if (!user || (user.role !== 'admin' && !user.is_staff)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -452,6 +1024,25 @@ export function AdminDashboard() {
           Portfolio analytics, content management, and system administration
         </p>
       </motion.div>
+
+      {/* Global Message Display */}
+      {message && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="fixed top-20 right-4 z-50"
+        >
+          <Alert className={`${message.type === 'error' ? 'border-red-500/50 bg-red-500/10' : 'border-green-500/50 bg-green-500/10'} shadow-lg`}>
+            <AlertDescription className={message.type === 'error' ? 'text-red-200' : 'text-green-200'}>
+              {message.text}
+            </AlertDescription>
+          </Alert>
+        </motion.div>
+      )}
+
+      {/* Auto-clear message after 5 seconds */}
+      {message && setTimeout(() => setMessage(null), 5000)}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-6">
@@ -1131,31 +1722,6 @@ export function AdminDashboard() {
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Gig Creation/Update Dialog */}
-      <Dialog open={isGigDialogOpen} onOpenChange={setIsGigDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedGig ? 'Edit Service' : 'Create New Service'}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedGig ? 'Update service details and configuration' : 'Add a new service to your marketplace'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <GigForm
-            gig={selectedGig}
-            projects={projects}
-            categories={adminData?.gig_categories || []}
-            onSubmit={selectedGig ? handleUpdateGig : handleCreateGig}
-            onCancel={() => {
-              setIsGigDialogOpen(false);
-              setSelectedGig(null);
-            }}
-          />
         </DialogContent>
       </Dialog>
 
