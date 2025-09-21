@@ -136,6 +136,11 @@ export const adminAPI = {
   createProject: (data: any) => api.post('/api/v1/projects/admin/projects/create', data),
   updateProject: (id: string, data: any) => api.put(`/api/v1/projects/admin/projects/${id}`, data),
   deleteProject: (id: string) => api.delete(`/api/v1/projects/admin/projects/${id}`),
+  // Gig management endpoints
+  getAdminGigs: () => api.get('/api/v1/gigs/admin/gigs'),
+  createGig: (data: any) => api.post('/api/v1/gigs/admin/gigs/create', data),
+  updateGig: (id: string, data: any) => api.put(`/api/v1/gigs/admin/gigs/${id}`, data),
+  deleteGig: (id: string) => api.delete(`/api/v1/gigs/admin/gigs/${id}`),
 };
 
 export const blogAPI = {

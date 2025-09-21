@@ -16,6 +16,26 @@ from .serializers import (
 from .tasks import generate_hire_proposal, send_hire_confirmation
 
 
+class AdminGigCreateView(generics.CreateAPIView):
+    """Admin: Create new gig"""
+    permission_classes = [IsAdminUser]
+    queryset = Gig.objects.all()
+    serializer_class = GigCreateUpdateSerializer
+
+
+class AdminGigDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Admin: Gig detail/update/delete"""
+    permission_classes = [IsAdminUser]
+    queryset = Gig.objects.all()
+    serializer_class = GigCreateUpdateSerializer
+    
+    def get_serializer(self, *args, **kwargs):
+        if self.request.method == 'GET':
+            # Use detail serializer for GET requests
+            kwargs['serializer_class'] = GigDetailSerializer
+        return super().get_serializer(*args, **kwargs)
+
+
 class GigCategoryListView(generics.ListAPIView):
     """List all active gig categories"""
     queryset = GigCategory.objects.filter(is_active=True)

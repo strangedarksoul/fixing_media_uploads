@@ -182,11 +182,14 @@ export function AdminDashboard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [gigs, setGigs] = useState<Gig[]>([]);
+  const [gigs, setGigs] = useState<Gig[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
+  const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
+  const [isGigDialogOpen, setIsGigDialogOpen] = useState(false);
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [showGigDialog, setShowGigDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -240,6 +243,7 @@ export function AdminDashboard() {
     },
   });
 
+        gigsResponse,
   const loadAdminData = useCallback(async () => {
     try {
       const [metricsResponse, leadsResponse, projectsResponse, gigsResponse, skillsResponse] = await Promise.all([
@@ -247,12 +251,14 @@ export function AdminDashboard() {
         adminAPI.getLeads(),
         projectsAPI.getProjects(),
         gigsAPI.getGigs(),
+        adminAPI.getAdminGigs(),
         projectsAPI.getSkills(),
       ]);
 
       setMetrics(metricsResponse.data);
       setLeads(leadsResponse.data.leads || []);
       setProjects(projectsResponse.data.results || []);
+      setGigs(gigsResponse.data.results || []);
       setGigs(gigsResponse.data.results || []);
       setSkills(skillsResponse.data.results || []);
     } catch (error) {

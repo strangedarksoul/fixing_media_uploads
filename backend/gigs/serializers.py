@@ -3,6 +3,47 @@ from projects.serializers import ProjectListSerializer
 from .models import GigCategory, Gig, HireRequest
 
 
+class GigCreateUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for creating/updating gigs (admin)"""
+    sample_project_ids = serializers.ListField(
+        child=serializers.IntegerField(), 
+        write_only=True, 
+        required=False
+    )
+    
+    class Meta:
+        model = Gig
+        fields = [
+            'title', 'category', 'short_description', 'long_description',
+            'price_min', 'price_max', 'price_currency', 'price_type',
+            'delivery_time_min', 'delivery_time_max', 'delivery_time_unit',
+            'inclusions', 'exclusions', 'addons', 'requirements',
+            'hero_image', 'gallery_images', 'external_links',
+            'status', 'is_featured', 'order', 'sample_project_ids'
+        ]
+    
+    def create(self, validated_data):
+        sample_project_ids = validated_data.pop('sample_project_ids', [])
+        gig = Gig.objects.create(**validated_data)
+        
+        if sample_project_ids:
+            gig.sample_projects.set(sample_project_ids)
+        
+        return gig
+    
+    def update(self, instance, validated_data):
+        sample_project_ids = validated_data.pop('sample_project_ids', None)
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        if sample_project_ids is not None:
+            instance.sample_projects.set(sample_project_ids)
+        
+        return instance
+
+
 class GigCategorySerializer(serializers.ModelSerializer):
     gig_count = serializers.SerializerMethodField()
     
