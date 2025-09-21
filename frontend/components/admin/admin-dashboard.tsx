@@ -378,6 +378,26 @@ export function AdminDashboard() {
     setShowGigDialog(true);
   };
 
+  const handleDeleteProject = async (project: Project) => {
+    if (!confirm(`Are you sure you want to delete "${project.title}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await adminAPI.deleteProject(project.id);
+      setMessage({ type: 'success', text: 'Project deleted successfully!' });
+      loadAdminData(); // Reload data
+      
+      analytics.track('admin_project_deleted', {
+        project_id: project.id,
+        title: project.title,
+      });
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      setMessage({ type: 'error', text: 'Failed to delete project' });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'new': return 'bg-blue-500/20 text-blue-400';
