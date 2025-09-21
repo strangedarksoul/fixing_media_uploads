@@ -182,12 +182,10 @@ export function AdminDashboard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [gigs, setGigs] = useState<Gig[]>([]);
-  const [gigs, setGigs] = useState<Gig[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
   const [isGigDialogOpen, setIsGigDialogOpen] = useState(false);
   const [showProjectDialog, setShowProjectDialog] = useState(false);
@@ -243,7 +241,6 @@ export function AdminDashboard() {
     },
   });
 
-        gigsResponse,
   const loadAdminData = useCallback(async () => {
     try {
       const [metricsResponse, leadsResponse, projectsResponse, gigsResponse, skillsResponse] = await Promise.all([
@@ -259,7 +256,6 @@ export function AdminDashboard() {
       setLeads(leadsResponse.data.leads || []);
       setProjects(projectsResponse.data.results || []);
       setGigs(gigsResponse.data.results || []);
-      setGigs(gigsResponse.data.results || []);
       setSkills(skillsResponse.data.results || []);
     } catch (error) {
       console.error('Failed to load admin data:', error);
@@ -273,6 +269,120 @@ export function AdminDashboard() {
       loadAdminData();
     }
   }, [user, loadAdminData]);
+
+  const handleCreateGig = async (gigData: any) => {
+    try {
+      setIsLoading(true);
+      
+      // Transform form data to match backend expectations
+      const transformedData = {
+        ...gigData,
+        sample_project_ids: gigData.sample_projects || [],
+        inclusions: gigData.inclusions ? gigData.inclusions.split('\n').filter(Boolean) : [],
+        exclusions: gigData.exclusions ? gigData.exclusions.split('\n').filter(Boolean) : [],
+        requirements: gigData.requirements ? gigData.requirements.split('\n').filter(Boolean) : [],
+        addons: gigData.addons || [],
+        gallery_images: gigData.gallery_images || [],
+        external_links: gigData.external_links || {},
+      };
+      
+      delete transformedData.sample_projects;
+      
+      await adminAPI.createGig(transformedData);
+      
+      setGlobalMessage({ type: 'success', text: 'Service created successfully!' });
+      setIsGigDialogOpen(false);
+      setSelectedGig(null);
+      
+      // Reload admin data
+      loadAdminData();
+      
+      analytics.track('admin_gig_created', {
+        gig_title: gigData.title,
+        gig_category: gigData.category,
+        price_min: gigData.price_min,
+        delivery_time: gigData.delivery_time_min,
+      });
+    } catch (error: any) {
+      console.error('Failed to create gig:', error);
+      setGlobalMessage({ 
+        type: 'error', 
+        text: error.response?.data?.message || 'Failed to create service' 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateGig = async (gigData: any) => {
+    if (!selectedGig) return;
+    
+    try {
+      setIsLoading(true);
+      
+      // Transform form data to match backend expectations
+      const transformedData = {
+        ...gigData,
+        sample_project_ids: gigData.sample_projects || [],
+        inclusions: gigData.inclusions ? gigData.inclusions.split('\n').filter(Boolean) : [],
+        exclusions: gigData.exclusions ? gigData.exclusions.split('\n').filter(Boolean) : [],
+        requirements: gigData.requirements ? gigData.requirements.split('\n').filter(Boolean) : [],
+        addons: gigData.addons || [],
+        gallery_images: gigData.gallery_images || [],
+        external_links: gigData.external_links || {},
+      };
+      
+      delete transformedData.sample_projects;
+      
+      await adminAPI.updateGig(selectedGig.id, transformedData);
+      
+      setGlobalMessage({ type: 'success', text: 'Service updated successfully!' });
+      setIsGigDialogOpen(false);
+      setSelectedGig(null);
+      
+      // Reload admin data
+      loadAdminData();
+      
+      analytics.track('admin_gig_updated', {
+        gig_id: selectedGig.id,
+        gig_title: gigData.title,
+      });
+    } catch (error: any) {
+      console.error('Failed to update gig:', error);
+      setGlobalMessage({ 
+        type: 'error', 
+        text: error.response?.data?.message || 'Failed to update service' 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteGig = async (gigId: string) => {
+    if (!confirm('Are you sure you want to delete this service? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      await adminAPI.deleteGig(gigId);
+      
+      setGlobalMessage({ type: 'success', text: 'Service deleted successfully!' });
+      
+      // Reload admin data
+      loadAdminData();
+      
+      analytics.track('admin_gig_deleted', { gig_id: gigId });
+    } catch (error: any) {
+      console.error('Failed to delete gig:', error);
+      setGlobalMessage({ 
+        type: 'error', 
+        text: error.response?.data?.message || 'Failed to delete service' 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSendNotification = async () => {
     if (!notificationForm.title || !notificationForm.body) return;
@@ -324,22 +434,6 @@ export function AdminDashboard() {
       loadAdminData(); // Reload data
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to update project' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCreateGig = async (data: any) => {
-    setIsSubmitting(true);
-    try {
-      // In a real implementation, this would call the admin API to create a gig
-      console.log('Creating gig:', data);
-      setMessage({ type: 'success', text: 'Service created successfully!' });
-      setShowGigDialog(false);
-      gigForm.reset();
-      loadAdminData(); // Reload data
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to create service' });
     } finally {
       setIsSubmitting(false);
     }
