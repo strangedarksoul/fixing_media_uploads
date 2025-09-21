@@ -131,6 +131,11 @@ export const adminAPI = {
   getLeadDetail: (id: number) => api.get(`/api/v1/admin/leads/${id}`),
   getChatLogs: () => api.get('/api/v1/admin/chat/logs'),
   exportAnalytics: (type: string) => api.get(`/api/v1/admin/analytics/export?type=${type}`),
+  // Project management endpoints
+  getAdminProjects: () => api.get('/api/v1/projects/admin/projects'),
+  createProject: (data: any) => api.post('/api/v1/projects/admin/projects/create', data),
+  updateProject: (id: string, data: any) => api.put(`/api/v1/projects/admin/projects/${id}`, data),
+  deleteProject: (id: string) => api.delete(`/api/v1/projects/admin/projects/${id}`),
 };
 
 export const blogAPI = {
